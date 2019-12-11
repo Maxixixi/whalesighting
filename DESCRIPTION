@@ -1,0 +1,27 @@
+Package: whalesighting
+Type: Package
+Date: 2019-12-10
+Title: R Package for The Whale Hotline API
+Version: 0.1.0
+Authors@R: person("Xiusong", "LI", email = "xl2922@columbia.edu",
+      role = c("aut", "cre"))
+Maintainer: LI Xiusong <xl2922@columbia.edu>
+Description: This package allows users to access the famous "The Whale Hotline API". 
+    Five functions are included in the package. Users can view a maximum of 1000 recent 
+    whale sightings (can filter by distance), get the sighting frequency of different whale types, 
+    check the sighting a particular whale type, and acquire additional knowledge of the sighted whale types.   
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Depends:
+    httr,
+    rvest,
+    stringr,
+    dplyr,
+    ggplot2
+RoxygenNote: 6.1.99.9001
+Suggests: 
+    testthat (>= 2.1.0),
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr

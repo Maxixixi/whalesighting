@@ -1,0 +1,69 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# whalesighting
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+*The Whale Hotline API* is created and maintained by [The Whale Museum](https://whalemuseum.org). Based in Washington, the museum is dedicated to promote stewardship of whales and the Salish Sea ecosystem through education and research. One of its daily functions is to run __The Whale Hotline__. Over the past 30 years, they've been collecting whales sighting data around the world. Through [The Whale Hotline API](http://hotline.whalemuseum.org/api), users can access numerous interesting whales data, and researchers can extract valuable information and observe crucial trends. 
+
+The purpose of this project is to build a API client in the form of a R package. By installing this `whalesighting` package, users can access this database in R environment and get different kinds of whale-related information utilizing a variety of functions.  
+
+## Installation
+
+You can install the released version of whalesighting from github with:
+
+```{r}
+# devtools::install_github('Maxixixi/whalesighting')
+library(whalesighting)
+```
+
+## Example
+
+Here are several examples which show you how to interact with this package's 5 functions
+
+#### Function 1: `whale_info()`
+```{r example}
+whale_info(10)
+```
+
+#### Function 2: `whaletype_freq()`
+```{r}
+whaletype_freq(50)
+```
+
+#### Function 3: `whale_des()`
+```{r}
+whale_des(50)
+```
+
+#### Function 4: `checkWhale()`
+```{r}
+checkWhale('orca')
+```
+
+#### Function 5: `whale_dist()`
+```{r}
+whale_dist(8.5159, -123.1524, 30.)
+```
+
+
+
+
+
+
+
+

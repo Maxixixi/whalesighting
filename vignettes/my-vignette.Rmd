@@ -1,0 +1,305 @@
+---
+title: "R Package for The Whale Hotline API"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{R Package for The Whale Hotline API}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Introduction
+
+*The Whale Hotline API* is created and maintained by [The Whale Museum](https://whalemuseum.org). Based in Washington, the museum is dedicated to promote stewardship of whales and the Salish Sea ecosystem through education and research. One of its daily functions is to run __The Whale Hotline__. Over the past 30 years, they've been collecting whales sighting data around the world. Through [The Whale Hotline API](http://hotline.whalemuseum.org/api), users can access numerous interesting whales data, and researchers can extract valuable information and observe crucial trends. 
+
+The purpose of this project is to build a API client in the form of a R package. By installing this whalesighting package, users can access this database in R environment and get different kinds of whale-related information utilizing a variety of functions.   
+
+
+## Functions
+
+There are five functions supported by this package. Following the instructions in this vignette, you will understand what these functions do and how to use them. 
+
+### Function 1: Get comprehensive information about the most recent whale sightings
+
+The Whale Hotline API allows users to get a maximum of 1000 recent whale sighting records. By pass an integer x between 1 and 1000 to the function, it will return a R dataframe that contains x recent whale sightings with detailed information, including whale species, sighting latitude & longitude, location, and sighting date & time.
+
+You need to attach `httr` package in order to use this function.
+```{r}
+library(httr)
+```
+
+```{r setup}
+# Function code
+whale_info <- function(x) {
+
+  requireNamespace("httr")
+
+  if (x < 1 | x > 1000) {
+    warning("The input number is beyond limit. Note that you must input an integer within the range [1, 1000].")
+  }
+  else {
+    species <- c()
+    quantity <- c()
+    latitude <- c()
+    longitude <- c()
+    location <- c()
+    sighted_at <- c()
+
+    endpoint <- paste("http://hotline.whalemuseum.org/api.json?&limit=", x, sep="")
+    get_result <- GET(endpoint)
+    content <- content(get_result)
+
+    for (i in 1:length(content)) {
+      species[i] <- content[[i]]$species
+      latitude[i] <- content[[i]]$latitude
+      longitude[i] <- content[[i]]$longitude
+      location[i] <- content[[i]]$location
+      sighted_at[i] <- content[[i]]$sighted_at
+    }
+
+    complete_table <- as.data.frame(cbind(species, quantity, latitude, longitude, location, sighted_at))
+    complete_table
+  }
+}
+```
+
+Call the function `whale_info()` with x = 500. The 500 most recent whale sightings will be retrieved and corresponding information will also be returned in the form of a dataframe.
+```{r}
+whale_info(100)
+```
+
+Note that the limit of the sighting records permitted by the API is 1000. Therefore, you can only pass an integer smaller than 1000. 
+
+### Function 2: Get whale types and frequency
+
+The Whale Hotline API allows users to get a maximum of 1000 recent whale sighting records. By pass an integer x between 1 and 1000 to the function, it will search all whale types that have been documented in the most recent x whale sightings and the frequency of sightings for each whale type. A bar chart will be drawn to visualize the distribution of different whale types.
+
+You need to attach `httr`, `dplyr`, and `ggplot2` packages in order to use this function.
+```{r}
+library(httr)
+library(dplyr)
+library(ggplot2)
+```
+
+```{r}
+# Function code
+whaletype_freq <- function(x) {
+
+  requireNamespace("httr")
+  requireNamespace("dplyr")
+  requireNamespace("ggplot2")
+
+  whales_species <- c()
+
+  endpoint <- paste("http://hotline.whalemuseum.org/api.json?&limit=", x, sep="")
+  get_result <- GET(endpoint)
+  content <- content(get_result)
+
+  for (i in 1:length(content)) {
+    whales_species[i] <- content[[i]]$species
+  }
+
+  output_dataframe <- whales_species %>% table() %>% as.data.frame()
+  names(output_dataframe) <- c("Whale Type", "Count")
+  arrange(output_dataframe, desc(output_dataframe$Count))
+  
+  ggplot(data=output_dataframe, aes(x=output_dataframe$`Whale Type`, y=output_dataframe$Count)) +
+    geom_bar(stat = "identity")
+}
+```
+
+Call the function `whaletype_freq()` with x = 50. All the whale types that have occurred in these 50 most recent sightings will be searched and their frequency will be counted. The results will be given in the form of a bar chart.
+```{r}
+whaletype_freq(50)
+```
+
+### Function 3: Get whale types and provide detailed descriptions for each type
+
+The Whale Hotline API allows users to get a maximum of 1000 recent whale sighting records. By pass an integer x between 1 and 1000 to the function, it will return a R dataframe that contains all whale types that have been documented in the most recent x whale sightings and detailed descriptions for each whale type.
+
+You need to attach `httr`, `dplyr`, `rvest`, and `stringr` packages in order to use this function.
+```{r}
+library(httr)
+library(dplyr)
+library(rvest)
+library(stringr)
+```
+
+```{r}
+whale_des <- function(x) {
+
+  requireNamespace("dplyr")
+  requireNamespace("httr")
+  requireNamespace("stringr")
+  requireNamespace("rvest")
+
+  whalelist <- c()
+  descriptionlist <- c()
+
+  url_wiki <- "https://www.thoughtco.com/types-of-whales-2292021"
+  wiki <- read_html(url_wiki)
+  whaledescriptions <- html_text(html_nodes(wiki, css = ".comp.mntl-sc-block.mntl-sc-block-html"))
+
+  endpoint <- paste("http://hotline.whalemuseum.org/api.json?&limit=", x, sep="")
+  get_result <- GET(endpoint)
+  content <- content(get_result)
+
+  for (i in 1:length(content)) {
+    whalelist[i] <- content[[i]]$species
+  }
+
+  whalenamelist <- whalelist %>% unique() %>% as.character()
+
+  for (i in 1:length(whalenamelist)) {
+    whalename <- whalenamelist[i]
+
+    for (j in 1:length(whaledescriptions)) {
+      if (str_detect(whaledescriptions[j], whalename) == TRUE) {
+        descriptionlist[i] <- whaledescriptions[j]
+        descriptionlist[i] <- str_remove(descriptionlist[i], "\n")
+      }
+    }
+  }
+
+  name_description <- as.data.frame(cbind(whalenamelist, descriptionlist))
+  names(name_description) <- c("Whale Type", "Description")
+  name_description
+}
+```
+
+Call the function with x = 700. All whale types that have occurred in the most recent 700 sightings will be searched and a detailed description for each type will be provided. The descriptions are collected from the website [19 Types of Whales](https://www.thoughtco.com/types-of-whales-2292021)
+```{r}
+whale_des(700)
+```
+
+### Function 4: Check if a particular whale type has been sighted
+
+By passing a particular whale type to the function, it will tell you if this type of whale has occurred in the recent 1000 sightings (maximum of sightings to access). If yes, it will return the specfic number of sightings.If not, it will tell you there are no such records.
+
+You need to attach `httr` and `dplyr` packages in order to use this function.
+```{r}
+library(httr)
+library(dplyr)
+```
+
+```{r}
+checkWhale <- function(x) {
+
+  requireNamespace("dplyr")
+  requireNamespace("httr")
+
+  if (is.character(x) == FALSE) {
+    print("Please input a valid whale name")
+  }
+
+  else {
+    endpoint <- "http://hotline.whalemuseum.org/api.json?&limit=1000"
+    get_result <- GET(endpoint)
+    content <- content(get_result)
+
+    whalelist <- c()
+
+    for (i in 1:length(content)) {
+      whalelist[i] <- content[[i]]$species
+    }
+
+    whalenamelist <- whalelist %>% unique() %>% as.character()
+    x <- str_to_lower(x, locale = "en")
+
+    if ((TRUE %in% str_detect(whalenamelist, x)) == FALSE) {
+      printout <- paste("There are no records of", x, "in the recent 1000 sightings (1000 is the maximum)", sep=" ")
+      printout
+    }
+    else {
+      url <- paste("http://hotline.whalemuseum.org/api/count.json?species=", x, sep = "")
+      get_result <- GET(url)
+      sighting <- content(get_result)
+
+      if (sighting == 1) {
+        printout <- paste("There is 1 sighting of", x, sep = " ")
+        printout
+      }
+      else {
+        printout <- paste("There are", sighting, "records of", x, "in the recent 1000 sightings (1000 is the maximum)", sep = " ")
+        printout
+      }
+   }
+  }
+}
+```
+
+Call the function with x = 'orca'. There are sighting records of orca, so the function returns the frequency of sighting "There are 18775 records of orca in the recent 1000 sightings (1000 is the maximum)".
+```{r}
+checkWhale('orca')
+```
+
+Call the function with x = 'blue whale'. There are no records for "blue whale", so the result shows "There are no records of blue whale in the recent 1000 sightings (1000 is the maximum)".
+```{r}
+checkWhale('blue whale')
+```
+
+### Function 5: Get whale sightings that occured near a center point within a radius
+
+Users can specify the location of sightings they want to get. There are three parameters they can modify: latitude, longitude, and radius. A pair of latitude and longitude fixes a center point and the radius refers to the distance around that center point. Togther, they forms a region. By passing latitude, longitude, and radius sequentially to the function, it will return a R dataframe that contains sightings falling in specified region, as well as a variety of information about the sightings including whale species, sighting latitude & longitude, location, and sighting date & time.
+
+You need to attach `httr` and `dplyr` packages in order to use this function.
+```{r}
+library(httr)
+library(dplyr)
+```
+
+
+```{r}
+whale_dist <- function(x, y, z) {
+
+  if (x < -90 | x > 90) {
+    warning('Please input a valid latitude! Note that latitude must be within the range [-90, 90].')
+  }
+  else if (y < -180 | y > 180) {
+    warning('Please input a valid longitude! Note that longitude must be within the range [-180, 180].')
+  }
+  else  if (z < 0) {
+    warning('Please input a valid radius! Note that the radius must be a non-negative number.')
+  }
+  else {
+    requireNamespace("dplyr")
+    requireNamespace("httr")
+    
+    species <- c()
+    quantity <- c()
+    latitude <- c()
+    longitude <- c()
+    location <- c()
+    sighted_at <- c()
+
+    endpoint <- paste("http://hotline.whalemuseum.org/api.json?&limit=1000&near=", x, ",", y, "&radius=", z, sep = "")
+    get_result <- GET(endpoint)
+    content <- content(get_result)
+
+    for (i in 1:length(content)) {
+      species[i] <- content[[i]]$species
+      latitude[i] <- content[[i]]$latitude
+      longitude[i] <- content[[i]]$longitude
+      location[i] <- content[[i]]$location
+      sighted_at[i] <- content[[i]]$sighted_at
+    }
+
+    complete_table <- as.data.frame(cbind(species, quantity, latitude, longitude, location, sighted_at))
+    complete_table
+  }
+}
+```
+
+Call the function with x = 8.5159, y = -123.1524, and z = 30. The result shows that there are only 17 sightings that occurred within this region. 
+```{r}
+whale_dist(8.5159, -123.1524, 30.)
+```
+
+
+
